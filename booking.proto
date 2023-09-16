@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package booking;
+
+service BookingService {
+  rpc CreateReservation (CreateReservationRequest) returns (CreateReservationResponse);
+}
+
+message CreateReservationRequest {
+  string startTime = 1;
+  string endTime = 2;
+  string status = 5;
+}
+
+message CreateReservationResponse {
+  bool success = 1;
+  string message = 2;
+}
