@@ -11,16 +11,26 @@ datasource db {
   relationMode = "prisma"
 }
 
-model Reservation {
-  id           Int       @id @default(autoincrement())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+enum BookingStatus {
+  BOOKED        // Represents "booking success"
+  CHECKED_IN    // Represents "current check in"
+  COMPLETED     // Represents "finish with this booking"
+  MISSED        // Represents "miss this booking"
+}
+
+
+model Booking {
+  id           Int        @id @default(autoincrement())
+  userId       Int        //user id from user service
+  createdAt    DateTime   @default(now())
   startTime    DateTime
   endTime      DateTime
   checkinTime  DateTime?
   checkoutTime DateTime?
-  status       String 
-
+  seatId       Int
+  status       BookingStatus 
+  isActive     Boolean    // true = active,i.e.present , false = non-active,i.e.past/history
   @@index(startTime)
   @@index(endTime)
+  @@index(userId)
 }
