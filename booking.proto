@@ -1,18 +1,74 @@
 syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 package booking;
 
 service BookingService {
-  rpc CreateReservation (CreateReservationRequest) returns (CreateReservationResponse);
+  rpc GetUserHistory (UserId) returns (BookingList);
+  rpc GetBooking (BookingId) returns (BookingResponse);
+  rpc GetAvailableSeat (BookingTime) returns (SeatList);
+  rpc CreateBooking (BookingRequest) returns (BookingResponse);
+  rpc UpdateBooking (BookingUpdateRequest) returns (BookingResponse);
+  rpc UpdateBookingStatus (UpdateBookingStatusRequest) returns (BookingResponse); 
+  rpc DeleteBooking (BookingId) returns (google.protobuf.Empty);
 }
 
-message CreateReservationRequest {
-  string startTime = 1;
-  string endTime = 2;
-  string status = 5;
+message BookingId {
+  int64 id = 1;
 }
 
-message CreateReservationResponse {
-  bool success = 1;
-  string message = 2;
+message UserId {
+  int64 userId = 1;
+}
+
+message Seat {
+  int32 seatId = 1;
+}
+
+message SeatList {
+  repeated Seat seats = 1; 
+}
+
+message BookingTime {
+  google.protobuf.Timestamp startTime = 1;
+  google.protobuf.Timestamp endTime = 2;
+}
+
+message BookingRequest {
+  User user = 1;
+  BookingTime bookingTime = 2;
+  Seat seat = 3;
+  BookingStatusEnum status = 4;
+}
+
+message BookingResponse {
+  BookingId id = 1;
+  BookingRequest bookingData = 2;
+  google.protobuf.Timestamp checkinTime = 3;
+  google.protobuf.Timestamp checkoutTime = 4;
+  bool isActive = 5;
+}
+
+message BookingList {
+  repeated BookingResponse bookings = 1;
+}
+
+message BookingUpdateRequest {
+  BookingId id = 1;
+  BookingRequest bookingData = 2; 
+}
+
+// adjust later after implement update booking status function
+enum BookingStatusEnum {
+  UNKNOWN = 0; 
+  BOOKED = 1;
+  CHECKED_IN = 2;
+  COMPLETED = 3;
+  MISSED = 4;
+}
+
+message UpdateBookingStatusRequest {
+  BookingId id = 1;
+  BookingStatusEnum status = 2;
 }

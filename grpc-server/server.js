@@ -1,16 +1,17 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-const PROTO_PATH = '../booking.proto';
+const PROTO_PATH = "../booking.proto";
 
-const grpc = require('grpc');
-const protoLoader = require('@grpc/proto-loader');
+// const grpc = require('grpc');
+var grpc = require("@grpc/grpc-js");
+const protoLoader = require("@grpc/proto-loader");
 
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 	keepCase: true,
 	longs: String,
 	enums: String,
-	arrays: true,
+	arrays: true
 });
 
 const bookingProto = grpc.loadPackageDefinition(packageDefinition);
@@ -30,27 +31,27 @@ server.addService(bookingProto.booking.BookingService.service, {
 					startTime,
 					endTime,
 					seatId,
-					status,
-				},
+					status
+				}
 			});
 
-			console.log('Created reservation:', reservation);
+			console.log("Created reservation:", reservation);
 
 			// Send a response back to the gRPC client
 			callback(null, {
 				success: true,
-				message: 'Reservation created successfully',
+				message: "Reservation created successfully"
 			});
 		} catch (error) {
-			console.error('Error creating reservation:', error);
+			console.error("Error creating reservation:", error);
 			callback({
 				code: grpc.status.INTERNAL,
-				details: 'Error creating reservation',
+				details: "Error creating reservation"
 			});
 		}
-	},
+	}
 });
 
-server.bind('127.0.0.1:30043', grpc.ServerCredentials.createInsecure());
-console.log('Server running at http://127.0.0.1:30043');
+server.bind("127.0.0.1:30043", grpc.ServerCredentials.createInsecure());
+console.log("Server running at http://127.0.0.1:30043");
 server.start();
