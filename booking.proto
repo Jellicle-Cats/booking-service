@@ -1,17 +1,17 @@
 syntax = "proto3";
 import "google/protobuf/timestamp.proto";
-// import "google/protobuf/empty.proto";
+import "google/protobuf/empty.proto";
 
 package booking;
 
 service BookingService {
   rpc GetUserHistory (UserId) returns (BookingList);
-//   rpc GetBooking (BookingId) returns (BookingResponse);
+  rpc GetBooking (BookingId) returns (BookingResponse);
   rpc GetUnavailableSeat (BookingTime) returns (SeatList);
-//   rpc CreateBooking (BookingRequest) returns (BookingResponse);
-//   rpc UpdateBooking (BookingUpdateRequest) returns (BookingResponse);
+  rpc CreateBooking (BookingRequest) returns (BookingResponse);
+  rpc UpdateBooking (BookingUpdateRequest) returns (BookingResponse);
   rpc UpdateBookingStatus (UpdateBookingStatusRequest) returns (BookingResponse); 
-//   rpc DeleteBooking (BookingId) returns (google.protobuf.Empty);
+  rpc DeleteBooking (BookingId) returns (google.protobuf.Empty);
 }
 
 message BookingId {
@@ -30,6 +30,14 @@ message SeatList {
   repeated Seat seats = 1; 
 }
 
+/*
+google.protobuf.Timestamp is in this format
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
+*/
+
 // message BookingTime {
 //   google.protobuf.Timestamp startTime = 1;
 //   google.protobuf.Timestamp endTime = 2;
@@ -38,9 +46,8 @@ message SeatList {
 message BookingTime {
     int64 startTime = 1;
     int64 endTime = 2;
-  }
+}
 
-  
 message BookingRequest {
   UserId user = 1;
   BookingTime bookingTime = 2;
@@ -51,8 +58,8 @@ message BookingRequest {
 message BookingResponse {
   BookingId id = 1;
   BookingRequest bookingData = 2;
-  google.protobuf.Timestamp checkinTime = 3;
-  google.protobuf.Timestamp checkoutTime = 4;
+  int64 checkinTime = 3;
+  int64 checkoutTime = 4;
   bool isActive = 5;
 }
 
