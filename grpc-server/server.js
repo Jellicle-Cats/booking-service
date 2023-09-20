@@ -122,6 +122,7 @@ function getUnavailableSeat(call, callback) {
 }
 
 function updateBookingStatus(call, callback) {
+	const request = call.request;
 	const bookingId = Number(request.id.id);
 
 	// Check if the booking with the specified ID exists
