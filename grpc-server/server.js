@@ -74,42 +74,16 @@ function getUnavailableSeat(call, callback) {
 			const startTime = new Date(startTimeMillis);
 			const endTime = new Date(endTimeMillis);
 
-			const threshold = 60 * 60 * 1000; // 1 hour in milliseconds
-
-			// Adjust the end time for both cases
-			const adjustedEndTime1 = new Date(startTime.getTime() + threshold);
-			const adjustedEndTime2 = new Date(endTime.getTime() + threshold);
-
-			const isStartTimeLessThanThreshold =
-				endTime - startTime < threshold;
-
 			const whereCondition = {
 				OR: [{ status: 0 }, { status: 1 }],
 			};
 
-			// startTime, adjustedEndTime1 = Start time + 1 hour
-			// Find bookings where the start time is less than or equal to adjustedEndTime1
-			// and the end time is greater than or equal to startTime
-			// find unavailable seats from start to start + 1 hour bc user can book 1 hour base on start time
-			if (isStartTimeLessThanThreshold) {
-				whereCondition.startTime = {
-					lte: adjustedEndTime1,
-				};
-				whereCondition.endTime = {
-					gte: startTime,
-				};
-				// startTime, adjustedEndTime2 = End time + 1 hour
-				// Find bookings where the start time is less than or equal to endTime
-				// and the end time is greater than or equal to startTime
-				// find unavailable seats from start to end + 1 hour bc user can book 1 hour from start - end time
-			} else {
-				whereCondition.startTime = {
-					lte: adjustedEndTime2,
-				};
-				whereCondition.endTime = {
-					gte: startTime,
-				};
-			}
+			whereCondition.startTime = {
+				lte: endTime,
+			};
+			whereCondition.endTime = {
+				gte: startTime,
+			};
 
 			// Find unavailable seats based on the whereCondition
 			prisma.booking
