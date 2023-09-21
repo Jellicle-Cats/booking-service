@@ -1,16 +1,16 @@
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const PROTO_PATH = "../booking.proto";
+const PROTO_PATH = '../booking.proto';
 
 // const grpc = require("grpc");
-var grpc = require("@grpc/grpc-js");
-const protoLoader = require("@grpc/proto-loader");
+var grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
 
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 	keepCase: true,
 	longs: String,
-	arrays: true
+	arrays: true,
 });
 
 const bookingProto = grpc.loadPackageDefinition(packageDefinition);
@@ -25,7 +25,7 @@ server.addService(bookingProto.booking.BookingService.service, {
 	CreateBooking: creatBooking,
 	UpdateBooking: updateBooking,
 	UpdateBookingStatus: updateBookingStatus,
-	DeleteBooking: deleteBooking
+	DeleteBooking: deleteBooking,
 });
 
 function getUserHistory(call, callback) {
@@ -33,8 +33,8 @@ function getUserHistory(call, callback) {
 	prisma.booking
 		.findMany({
 			where: {
-				userId: Number(userId)
-			}
+				userId: Number(userId),
+			},
 		})
 		.then((bookings) => {
 			const bookingList = {
@@ -45,24 +45,24 @@ function getUserHistory(call, callback) {
 							user: { userId: booking.userId },
 							bookingTime: {
 								startTime: booking.startTime.getTime(),
-								endTime: booking.endTime.getTime()
+								endTime: booking.endTime.getTime(),
 							},
 							seat: { seatId: booking.seatId },
-							status: booking.status
+							status: booking.status,
 						},
 						checkinTime: booking.checkinTime,
 						checkoutTime: booking.checkoutTime,
-						isActive: booking.isActive
+						isActive: booking.isActive,
 					};
-				})
+				}),
 			};
 			callback(null, bookingList);
 		})
 		.catch((error) => {
-			console.error("Error fetching user history:", error);
+			console.error('Error fetching user history:', error);
 			callback({
 				code: grpc.status.INTERNAL,
-				details: "Internal Server Error"
+				details: 'Internal Server Error',
 			});
 		});
 }
@@ -74,47 +74,47 @@ function getBooking(call, callback) {
 		prisma.booking
 			.findUnique({
 				where: {
-					id: bookingId
-				}
+					id: bookingId,
+				},
 			})
 			.then((existingBooking) => {
 				if (!existingBooking) {
 					// The booking with the specified ID was not found
-					console.error("Booking not found with ID:", bookingId);
+					console.error('Booking not found with ID:', bookingId);
 					callback({
 						code: grpc.status.NOT_FOUND, // Use NOT_FOUND status code
-						details: "Booking not found"
+						details: 'Booking not found',
 					});
 					return;
 				}
 				console.log(existingBooking);
 				callback(null, {
 					id: {
-						id: Number(existingBooking.id)
+						id: Number(existingBooking.id),
 					},
 					bookingData: {
 						user: {
-							userId: existingBooking.userId
+							userId: existingBooking.userId,
 						},
 						bookingTime: {
 							startTime: Date.parse(existingBooking.startTime),
-							endTime: Date.parse(existingBooking.endTime)
+							endTime: Date.parse(existingBooking.endTime),
 						},
 						seat: {
-							seatId: Number(existingBooking.seatId)
+							seatId: Number(existingBooking.seatId),
 						},
-						status: Number(existingBooking.status)
+						status: Number(existingBooking.status),
 					},
 					checkinTime: Date.parse(existingBooking.checkinTime),
 					checkoutTime: Date.parse(existingBooking.checkoutTime),
-					isActive: true
+					isActive: true,
 				});
 			});
 	} catch (error) {
-		console.error("Error processing request:", error);
+		console.error('Error processing request:', error);
 		callback({
 			code: grpc.status.INVALID_ARGUMENT,
-			details: "Invalid request parameters"
+			details: 'Invalid request parameters',
 		});
 	}
 }
@@ -132,49 +132,60 @@ function getUnavailableSeat(call, callback) {
 			const startTime = new Date(startTimeMillis);
 			const endTime = new Date(endTimeMillis);
 
+			console.log(startTime);
+			console.log(endTime);
+
 			const whereCondition = {
-				OR: [{ status: 0 }, { status: 1 }]
+				OR: [{ status: 1 }, { status: 2 }],
 			};
 
 			whereCondition.startTime = {
-				lte: endTime
+				lte: endTime,
 			};
 			whereCondition.endTime = {
-				gte: startTime
+				gte: startTime,
 			};
 
 			// Find unavailable seats based on the whereCondition
 			prisma.booking
 				.findMany({
-					where: whereCondition
+					where: whereCondition,
 				})
 				.then((bookings) => {
+					const seatSet = new Set(); // Create a Set to store unique seat IDs
+
+					// Add unique seat IDs to the Set
+					bookings.forEach((booking) => {
+						seatSet.add(booking.seatId);
+					});
+
 					const seatList = {
-						seats: bookings.map((booking) => ({
-							seatId: booking.seatId
-						}))
+						seats: Array.from(seatSet).map((seatId) => ({
+							seatId: seatId,
+						})),
 					};
+
 					callback(null, seatList);
 				})
 				.catch((error) => {
-					console.error("Error fetching unavailable seats:", error);
+					console.error('Error fetching unavailable seats:', error);
 					callback({
 						code: grpc.status.INTERNAL,
-						details: "Internal Server Error"
+						details: 'Internal Server Error',
 					});
 				});
 		} else {
-			console.error("Invalid timestamp values");
+			console.error('Invalid timestamp values');
 			callback({
 				code: grpc.status.INVALID_ARGUMENT,
-				details: "Invalid request parameters"
+				details: 'Invalid request parameters',
 			});
 		}
 	} catch (error) {
-		console.error("Error processing request:", error);
+		console.error('Error processing request:', error);
 		callback({
 			code: grpc.status.INVALID_ARGUMENT,
-			details: "Invalid request parameters"
+			details: 'Invalid request parameters',
 		});
 	}
 }
@@ -188,37 +199,37 @@ async function creatBooking(call, callback) {
 				endTime: new Date(Number(call.request.bookingTime.endTime)),
 				seatId: Number(call.request.seat.seatId),
 				status: Number(call.request.status),
-				isActive: true
-			}
+				isActive: true,
+			},
 		});
 		console.log(call.request);
 		console.log(_createBooking);
 		callback(null, {
 			id: {
-				id: Number(_createBooking.id)
+				id: Number(_createBooking.id),
 			},
 			bookingData: {
 				user: {
-					userId: Number(_createBooking.userId)
+					userId: Number(_createBooking.userId),
 				},
 				bookingTime: {
 					startTime: Date.parse(_createBooking.startTime),
-					endTime: Date.parse(_createBooking.endTime)
+					endTime: Date.parse(_createBooking.endTime),
 				},
 				seat: {
-					seatId: Number(_createBooking.seatId)
+					seatId: Number(_createBooking.seatId),
 				},
-				status: Number(_createBooking.status)
+				status: Number(_createBooking.status),
 			},
 			checkinTime: Date.parse(_createBooking.checkinTime),
 			checkoutTime: Date.parse(_createBooking.checkoutTime),
-			isActive: true
+			isActive: true,
 		});
 	} catch (error) {
-		console.error("Error processing request:", error);
+		console.error('Error processing request:', error);
 		callback({
 			code: grpc.status.INTERNAL,
-			details: "Cannot create booking"
+			details: 'Cannot create booking',
 		});
 	}
 }
@@ -229,16 +240,16 @@ async function updateBooking(call, callback) {
 		prisma.booking
 			.findUnique({
 				where: {
-					id: Number(call.request.id.id)
-				}
+					id: Number(call.request.id.id),
+				},
 			})
 			.then((existingBooking) => {
 				if (!existingBooking) {
 					// The booking with the specified ID was not found
-					console.error("Booking not found with ID:", bookingId);
+					console.error('Booking not found with ID:', bookingId);
 					callback({
 						code: grpc.status.NOT_FOUND, // Use NOT_FOUND status code
-						details: "Booking not found"
+						details: 'Booking not found',
 					});
 					return;
 				}
@@ -246,42 +257,46 @@ async function updateBooking(call, callback) {
 
 		const _updateBooking = await prisma.booking.update({
 			where: {
-				id: Number(call.request.id.id)
+				id: Number(call.request.id.id),
 			},
 			data: {
-				startTime: new Date(Number(call.request.bookingData.bookingTime.startTime)),
-				endTime: new Date(Number(call.request.bookingData.bookingTime.endTime)),
-				seatId: Number(call.request.bookingData.seat.seatId)
-			}
+				startTime: new Date(
+					Number(call.request.bookingData.bookingTime.startTime)
+				),
+				endTime: new Date(
+					Number(call.request.bookingData.bookingTime.endTime)
+				),
+				seatId: Number(call.request.bookingData.seat.seatId),
+			},
 		});
 		console.log(call.request);
 		console.log(_updateBooking);
 		callback(null, {
 			id: {
-				id: Number(_updateBooking.id)
+				id: Number(_updateBooking.id),
 			},
 			bookingData: {
 				user: {
-					userId: Number(_updateBooking.userId)
+					userId: Number(_updateBooking.userId),
 				},
 				bookingTime: {
 					startTime: Date.parse(_updateBooking.startTime),
-					endTime: Date.parse(_updateBooking.endTime)
+					endTime: Date.parse(_updateBooking.endTime),
 				},
 				seat: {
-					seatId: Number(_updateBooking.seatId)
+					seatId: Number(_updateBooking.seatId),
 				},
-				status: Number(_updateBooking.status)
+				status: Number(_updateBooking.status),
 			},
 			checkinTime: Date.parse(_updateBooking.checkinTime),
 			checkoutTime: Date.parse(_updateBooking.checkoutTime),
-			isActive: true
+			isActive: true,
 		});
 	} catch (error) {
-		console.error("Error processing request:", error);
+		console.error('Error processing request:', error);
 		callback({
 			code: grpc.status.INTERNAL,
-			details: "Cannot update booking"
+			details: 'Cannot update booking',
 		});
 	}
 }
@@ -294,16 +309,16 @@ function updateBookingStatus(call, callback) {
 	prisma.booking
 		.findUnique({
 			where: {
-				id: bookingId
-			}
+				id: bookingId,
+			},
 		})
 		.then((existingBooking) => {
 			if (!existingBooking) {
 				// The booking with the specified ID was not found
-				console.error("Booking not found with ID:", bookingId);
+				console.error('Booking not found with ID:', bookingId);
 				callback({
 					code: grpc.status.NOT_FOUND, // Use NOT_FOUND status code
-					details: "Booking not found"
+					details: 'Booking not found',
 				});
 				return;
 			}
@@ -312,11 +327,11 @@ function updateBookingStatus(call, callback) {
 			prisma.booking
 				.update({
 					where: {
-						id: bookingId
+						id: bookingId,
 					},
 					data: {
-						status: request.status
-					}
+						status: request.status,
+					},
 				})
 				.then((updatedBooking) => {
 					const bookingResponse = {
@@ -325,30 +340,30 @@ function updateBookingStatus(call, callback) {
 							user: { userId: updatedBooking.userId },
 							bookingTime: {
 								startTime: updatedBooking.startTime.getTime(),
-								endTime: updatedBooking.endTime.getTime()
+								endTime: updatedBooking.endTime.getTime(),
 							},
 							seat: { seatId: updatedBooking.seatId },
-							status: updatedBooking.status
+							status: updatedBooking.status,
 						},
 						checkinTime: updatedBooking.checkinTime,
 						checkoutTime: updatedBooking.checkoutTime,
-						isActive: updatedBooking.isActive
+						isActive: updatedBooking.isActive,
 					};
 					callback(null, bookingResponse);
 				})
 				.catch((error) => {
-					console.error("Error updating booking status:", error);
+					console.error('Error updating booking status:', error);
 					callback({
 						code: grpc.status.INTERNAL,
-						details: "Internal Server Error"
+						details: 'Internal Server Error',
 					});
 				});
 		})
 		.catch((error) => {
-			console.error("Error checking booking existence:", error);
+			console.error('Error checking booking existence:', error);
 			callback({
 				code: grpc.status.INTERNAL,
-				details: "Internal Server Error"
+				details: 'Internal Server Error',
 			});
 		});
 }
@@ -359,16 +374,16 @@ async function deleteBooking(call, callback) {
 		prisma.booking
 			.findUnique({
 				where: {
-					id: bookingId
-				}
+					id: bookingId,
+				},
 			})
 			.then((existingBooking) => {
 				if (!existingBooking) {
 					// The booking with the specified ID was not found
-					console.error("Booking not found with ID:", bookingId);
+					console.error('Booking not found with ID:', bookingId);
 					callback({
 						code: grpc.status.NOT_FOUND, // Use NOT_FOUND status code
-						details: "Booking not found"
+						details: 'Booking not found',
 					});
 					return;
 				}
@@ -376,23 +391,27 @@ async function deleteBooking(call, callback) {
 		// Delete the booking with the given ID
 		const deletedBooking = await prisma.booking.delete({
 			where: {
-				id: bookingId
-			}
+				id: bookingId,
+			},
 		});
 		// Return a success response
 		callback(null, {});
 	} catch (error) {
-		console.error("Error processing request:", error);
+		console.error('Error processing request:', error);
 		// Return a generic error response
 		callback({
 			code: grpc.status.INTERNAL,
-			details: "Cannot delete booking"
+			details: 'Cannot delete booking',
 		});
 	}
 }
 
-server.bindAsync("127.0.0.1:30043", grpc.ServerCredentials.createInsecure(), () => {
-	server.start();
-});
-console.log("Server running at http://127.0.0.1:30043");
+server.bindAsync(
+	'127.0.0.1:30043',
+	grpc.ServerCredentials.createInsecure(),
+	() => {
+		server.start();
+	}
+);
+console.log('Server running at http://127.0.0.1:30043');
 // server.start();
