@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-const PROTO_PATH = "../booking.proto";
+const PROTO_PATH = "booking.proto";
 
 // const grpc = require("grpc");
 var grpc = require("@grpc/grpc-js");
