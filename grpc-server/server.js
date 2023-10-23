@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-
 const PROTO_PATH = "booking.proto";
+const producer = require("../kafka-server/producer/index.js");
 
 // const grpc = require("grpc");
 var grpc = require("@grpc/grpc-js");
@@ -27,6 +27,30 @@ server.addService(bookingProto.booking.BookingService.service, {
 	UpdateBookingStatus: updateBookingStatus,
 	DeleteBooking: deleteBooking
 });
+
+// Kafka produce message
+function updateSeatStatus(seatId, status) {
+	// existing booking logic
+	const bookingDetails = { seatId, status };
+
+	// Create message to send to Kafka
+	const payloads = [
+		{
+			topic: "booking",
+			messages: JSON.stringify(bookingDetails)
+		}
+	];
+
+	// Send booking status to Kafka
+	producer.send(payloads, (error) => {
+		if (error) {
+			console.error("Failed to send message to Kafka:", error);
+			return;
+		}
+		console.log("Successed to send");
+		console.log(payloads);
+	});
+}
 
 function getUserHistory(call, callback) {
 	const userId = call.request.userId;
@@ -346,6 +370,7 @@ function updateBookingStatus(call, callback) {
 						isActive: updatedBooking.isActive
 					};
 					callback(null, bookingResponse);
+					updateSeatStatus(updatedBooking.seatId, updatedBooking.isActive);
 				})
 				.catch((error) => {
 					console.error("Error updating booking status:", error);
