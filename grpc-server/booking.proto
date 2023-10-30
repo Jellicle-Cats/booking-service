@@ -8,6 +8,7 @@ service BookingService {
   rpc GetUserHistory (UserId) returns (BookingList);
   rpc GetBooking (BookingId) returns (BookingResponse);
   rpc GetUnavailableSeat (BookingTime) returns (SeatList);
+  rpc GetSeatStatus (StatusTime) returns (stream SeatStatus);
   rpc CreateBooking (BookingRequest) returns (BookingResponse);
   rpc UpdateBooking (BookingUpdateRequest) returns (BookingResponse);
   rpc UpdateBookingStatus (UpdateBookingStatusRequest) returns (BookingResponse); 
@@ -30,6 +31,11 @@ message SeatList {
   repeated Seat seats = 1; 
 }
 
+message SeatStatus {
+  Seat seats = 1;
+  string status = 2;
+}
+
 /*
 google.protobuf.Timestamp is in this format
 message Timestamp {
@@ -42,6 +48,9 @@ message Timestamp {
 //   google.protobuf.Timestamp startTime = 1;
 //   google.protobuf.Timestamp endTime = 2;
 // }
+message StatusTime {
+  int64 startTime = 1;
+}
 
 message BookingTime {
     int64 startTime = 1;

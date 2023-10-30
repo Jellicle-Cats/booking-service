@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const PROTO_PATH = "booking.proto";
-const producer = require("../kafka-server/producer/index.js");
+// const producer = require("../kafka-server/producer/index.js");
 
 // const grpc = require("grpc");
 var grpc = require("@grpc/grpc-js");
@@ -22,13 +22,15 @@ server.addService(bookingProto.booking.BookingService.service, {
 	GetUserHistory: getUserHistory,
 	GetBooking: getBooking,
 	GetUnavailableSeat: getUnavailableSeat,
-	CreateBooking: creatBooking,
+	GetSeatStatus: GetSeatStatus,
+	CreateBooking: createBooking,
 	UpdateBooking: updateBooking,
 	UpdateBookingStatus: updateBookingStatus,
 	DeleteBooking: deleteBooking
 });
 
 // Kafka produce message
+// Unused
 function updateSeatStatus(seatId, status) {
 	// existing booking logic
 	const bookingDetails = { seatId, status };
@@ -214,7 +216,37 @@ function getUnavailableSeat(call, callback) {
 	}
 }
 
-async function creatBooking(call, callback) {
+async function GetSeatStatus(call, callback) {
+	try {
+		const startTime = new Date(Number(call.request.startTime * 1000));
+		const endTime = new Date(Number(call.request.startTime * 1000) + 5 * 60 * 1000);
+		const result = await prisma.booking.findMany({
+			where: {
+				startTime: {
+					gte: startTime,
+					lte: endTime
+				}
+			}
+		});
+		for (e of result) {
+			call.write({
+				seats: {
+					seatId: e.id
+				},
+				status: e.status
+			});
+		}
+		call.end();
+	} catch (error) {
+		console.error("Error processing request:", error);
+		callback({
+			code: grpc.status.INVALID_ARGUMENT,
+			details: "Error processing request"
+		});
+	}
+}
+
+async function createBooking(call, callback) {
 	try {
 		const _createBooking = await prisma.booking.create({
 			data: {
@@ -370,7 +402,7 @@ function updateBookingStatus(call, callback) {
 						isActive: updatedBooking.isActive
 					};
 					callback(null, bookingResponse);
-					updateSeatStatus(updatedBooking.seatId, updatedBooking.isActive);
+					// updateSeatStatus(updatedBooking.seatId, updatedBooking.isActive);
 				})
 				.catch((error) => {
 					console.error("Error updating booking status:", error);
