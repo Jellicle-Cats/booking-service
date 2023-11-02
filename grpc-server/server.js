@@ -218,13 +218,14 @@ function getUnavailableSeat(call, callback) {
 
 async function GetSeatStatus(call, callback) {
 	try {
-		const startTime = new Date(Number(call.request.startTime * 1000));
-		const endTime = new Date(Number(call.request.startTime * 1000) + 5 * 60 * 1000);
+		const presentTime = new Date(Number(call.request.time * 1000));
 		const result = await prisma.booking.findMany({
 			where: {
 				startTime: {
-					gte: startTime,
-					lte: endTime
+					lte: presentTime
+				},
+				endTime: {
+					gte: presentTime
 				}
 			}
 		});
@@ -240,7 +241,7 @@ async function GetSeatStatus(call, callback) {
 	} catch (error) {
 		console.error("Error processing request:", error);
 		callback({
-			code: grpc.status.INVALID_ARGUMENT,
+			code: grpc.status.UNKNOWN,
 			details: "Error processing request"
 		});
 	}
@@ -248,6 +249,43 @@ async function GetSeatStatus(call, callback) {
 
 async function createBooking(call, callback) {
 	try {
+		const userId = Number(call.request.user.userId);
+		const startTime = new Date(Number(call.request.bookingTime.startTime * 1000));
+		const endTime = new Date(Number(call.request.bookingTime.endTime * 1000));
+
+		const overlappingBookings = await prisma.booking.findMany({
+			where: {
+				userId: userId,
+				OR: [
+					{
+						startTime: {
+							lte: endTime
+						},
+						endTime: {
+							gte: startTime
+						}
+					},
+					{
+						startTime: {
+							gte: startTime,
+							lte: endTime
+						}
+					},
+					{
+						endTime: {
+							gte: startTime,
+							lte: endTime
+						}
+					}
+				]
+			}
+		});
+		if (overlappingBookings.length !== 0) {
+			callback({
+				code: grpc.status.INVALID_ARGUMENT,
+				details: "Overlap booking"
+			});
+		}
 		const _createBooking = await prisma.booking.create({
 			data: {
 				userId: Number(call.request.user.userId),
@@ -285,7 +323,7 @@ async function createBooking(call, callback) {
 		console.error("Error processing request:", error);
 		callback({
 			code: grpc.status.INTERNAL,
-			details: "Cannot create booking"
+			details: "Internal Error"
 		});
 	}
 }
