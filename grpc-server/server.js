@@ -472,8 +472,7 @@ async function deleteBooking(call, callback) {
 	}
 }
 
-server.bindAsync('127.0.0.1:30043', grpc.ServerCredentials.createInsecure(), () => {
+server.bindAsync(`${process.env.gRPC_URL}`, grpc.ServerCredentials.createInsecure(), () => {
 	server.start();
 });
-console.log('Server running at http://127.0.0.1:30043');
-// server.start();
+console.log(`Server running at http://${process.env.gRPC_URL}`);
