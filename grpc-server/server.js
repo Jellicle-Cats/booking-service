@@ -1,7 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const PROTO_PATH = 'booking.proto';
-// const producer = require("../kafka-server/producer/index.js");
 
 // const grpc = require("grpc");
 var grpc = require('@grpc/grpc-js');
@@ -28,31 +27,6 @@ server.addService(bookingProto.booking.BookingService.service, {
 	UpdateBookingStatus: updateBookingStatus,
 	DeleteBooking: deleteBooking,
 });
-
-// Kafka produce message
-// Unused
-function updateSeatStatus(seatId, status) {
-	// existing booking logic
-	const bookingDetails = { seatId, status };
-
-	// Create message to send to Kafka
-	const payloads = [
-		{
-			topic: 'booking',
-			messages: JSON.stringify(bookingDetails),
-		},
-	];
-
-	// Send booking status to Kafka
-	producer.send(payloads, (error) => {
-		if (error) {
-			console.error('Failed to send message to Kafka:', error);
-			return;
-		}
-		console.log('Successed to send');
-		console.log(payloads);
-	});
-}
 
 function getUserHistory(call, callback) {
 	const userId = call.request.userId;
@@ -250,12 +224,8 @@ async function GetSeatStatus(call, callback) {
 async function createBooking(call, callback) {
 	try {
 		const userId = Number(call.request.user.userId);
-		const startTime = new Date(
-			Number(call.request.bookingTime.startTime * 1000)
-		);
-		const endTime = new Date(
-			Number(call.request.bookingTime.endTime * 1000)
-		);
+		const startTime = new Date(Number(call.request.bookingTime.startTime * 1000));
+		const endTime = new Date(Number(call.request.bookingTime.endTime * 1000));
 
 		const overlappingBookings = await prisma.booking.findMany({
 			where: {
@@ -295,12 +265,8 @@ async function createBooking(call, callback) {
 		const _createBooking = await prisma.booking.create({
 			data: {
 				userId: Number(call.request.user.userId),
-				startTime: new Date(
-					Number(call.request.bookingTime.startTime * 1000)
-				),
-				endTime: new Date(
-					Number(call.request.bookingTime.endTime * 1000)
-				),
+				startTime: new Date(Number(call.request.bookingTime.startTime * 1000)),
+				endTime: new Date(Number(call.request.bookingTime.endTime * 1000)),
 				seatId: Number(call.request.seat.seatId),
 				status: Number(call.request.status),
 				isActive: true,
@@ -364,14 +330,8 @@ async function updateBooking(call, callback) {
 				id: Number(call.request.id.id),
 			},
 			data: {
-				startTime: new Date(
-					Number(
-						call.request.bookingData.bookingTime.startTime * 1000
-					)
-				),
-				endTime: new Date(
-					Number(call.request.bookingData.bookingTime.endTime * 1000)
-				),
+				startTime: new Date(Number(call.request.bookingData.bookingTime.startTime * 1000)),
+				endTime: new Date(Number(call.request.bookingData.bookingTime.endTime * 1000)),
 				seatId: Number(call.request.bookingData.seat.seatId),
 			},
 		});
@@ -456,7 +416,6 @@ function updateBookingStatus(call, callback) {
 						isActive: updatedBooking.isActive,
 					};
 					callback(null, bookingResponse);
-					// updateSeatStatus(updatedBooking.seatId, updatedBooking.isActive);
 				})
 				.catch((error) => {
 					console.error('Error updating booking status:', error);
@@ -513,12 +472,8 @@ async function deleteBooking(call, callback) {
 	}
 }
 
-server.bindAsync(
-	'127.0.0.1:30043',
-	grpc.ServerCredentials.createInsecure(),
-	() => {
-		server.start();
-	}
-);
+server.bindAsync('127.0.0.1:30043', grpc.ServerCredentials.createInsecure(), () => {
+	server.start();
+});
 console.log('Server running at http://127.0.0.1:30043');
 // server.start();
