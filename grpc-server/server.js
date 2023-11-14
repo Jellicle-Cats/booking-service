@@ -230,6 +230,7 @@ async function createBooking(call, callback) {
 		const overlappingBookings = await prisma.booking.findMany({
 			where: {
 				userId: userId,
+				status: { in: [1, 2] },
 				OR: [
 					{
 						startTime: {
